@@ -1,0 +1,65 @@
+name: Build and Deploy Vue invoce-ai with Debugging
+
+# Controls when the workflow will run
+on:
+  push:
+    branches:
+      - main # <-- IMPORTANT: Change this to your deployment branch (e.g., main, master, prod)
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+# Permissions needed for OIDC communication with AWS and checking out code
+permissions:
+  id-token: write # Required to request the JWT token from GitHub OIDC provider
+  contents: read  # Required to check out the repository code
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+
+    steps:
+      # 1. Get the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Specify the Node.js version required by your Vue project
+          node-version: '20' # <-- CHANGE Node.js version if needed
+          cache: 'npm' # Enable caching for npm dependencies for faster builds
+
+      # 3. Install project dependencies (using 'ci' for reliability)
+      - name: Install dependencies
+        run: npm ci
+ 
+      # 4. Build the Vue project for production (creates the 'dist' folder)
+      - name: Build Vue application
+        run: npm run build
+        env:
+           # If your build needs specific env vars, define them here using secrets
+           # Example: VUE_APP_API_URL: ${{ secrets.VUE_APP_API_URL_SECRET }}
+           NODE_ENV: production # Often set automatically by build scripts, but good to be explicit
+
+      # 5. Configure AWS credentials using the IAM Role and OIDC
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Use the ARN of the IAM Role stored in GitHub Secrets
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # 6. Deploy the built files ('dist' folder) to the S3 bucket
+      - name: Deploy static site to S3 bucket
+        # Syncs the contents of './dist' to the root of the S3 bucket
+        # --delete removes files in the bucket that are no longer in the 'dist' folder
+        run: aws s3 sync ./dist s3://${{ secrets.AWS_S3_BUCKET_NAME }} --delete
+
+      # 7. --- DEBUG STEP --- Print the CloudFront Distribution ID being used
+      #    Check the output of this step in the Actions log carefully!
+      - name: Debug CloudFront ID
+        run: echo "Using Distribution ID [${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}]"
+
+      # 8. Invalidate the CloudFront cache to serve the new files
+      - name: Invalidate CloudFront cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
