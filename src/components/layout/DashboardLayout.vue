@@ -39,6 +39,7 @@ const currentUser = computed(() => authStore.user)
 const navigation = ref<MenuItem[]>([
   { name: 'Dashboard', icon: HomeIcon, href: '/', routeName: 'dashboard' },
   { name: 'Tickets', icon: TicketIcon, href: '/tickets', routeName: 'tickets' },
+  { name: 'Notifications', icon: BellIcon, href: '/notifications', routeName: 'notifications' },
   // { name: 'Merchants', icon: BuildingStorefrontIcon, href: '/merchants', routeName: 'merchants' },
   // { name: 'Products', icon: CubeIcon, href: '/products', routeName: 'products' },
   // { name: 'Tokens', icon: KeyIcon, href: '/tokens', routeName: 'tokens' },

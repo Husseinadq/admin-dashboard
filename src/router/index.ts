@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Dashbard from '../views/Dashbard.vue'
 import Login from '../views/auth/Login.vue'
 import Ticket from '../views/Ticket.vue'
+import Notification from '../views/Notification.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -24,7 +25,13 @@ const router = createRouter({
       name: 'tickets',
       component: Ticket,
       meta: { requiresAuth: true }
-    }
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: Notification,
+      meta: { requiresAuth: true }
+    },
   ],
 })
 
