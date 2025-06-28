@@ -183,15 +183,7 @@
       </table>
     </div>
 
-    <!-- Modals -->
-    <NotificationTemplateModal
-      v-if="showModal"
-      :template="selectedTemplate"
-      :mode="modalMode"
-      @close="closeModal"
-      @saved="handleTemplateSaved"
-    />
-
+    <!-- Delete Confirmation Modal -->
     <ConfirmationModal
       v-if="showDeleteModal"
       title="Delete Template"
@@ -217,7 +209,6 @@ import {
 } from '@heroicons/vue/24/outline'
 import type { NotificationTemplate, TemplateFilters } from '@/types/notifications'
 import { NotificationTemplateService } from '@/services/notificationService'
-import NotificationTemplateModal from './NotificationTemplateModal.vue'
 import ConfirmationModal from '@/components/common/ConfirmationModal.vue'
 
 // Reactive state
@@ -225,10 +216,7 @@ const templates = ref<NotificationTemplate[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Modal state
-const showModal = ref(false)
-const modalMode = ref<'view' | 'create' | 'edit'>('view')
-const selectedTemplate = ref<NotificationTemplate | null>(null)
+// Removed modal state - now handled by parent component
 
 // Delete confirmation state
 const showDeleteModal = ref(false)
@@ -294,32 +282,18 @@ const loadTemplates = async () => {
 }
 
 const openCreateModal = () => {
-  selectedTemplate.value = null
-  modalMode.value = 'create'
-  showModal.value = true
+  emit('create-template')
 }
 
 const viewTemplate = (template: NotificationTemplate) => {
-  selectedTemplate.value = template
-  modalMode.value = 'view'
-  showModal.value = true
+  emit('view-template', template)
 }
 
 const editTemplate = (template: NotificationTemplate) => {
-  selectedTemplate.value = template
-  modalMode.value = 'edit'
-  showModal.value = true
+  emit('edit-template', template)
 }
 
-const closeModal = () => {
-  showModal.value = false
-  selectedTemplate.value = null
-}
-
-const handleTemplateSaved = () => {
-  closeModal()
-  loadTemplates() // Refresh the list
-}
+// Modal methods removed - now handled by parent component
 
 const confirmDelete = (template: NotificationTemplate) => {
   templateToDelete.value = template
@@ -379,6 +353,9 @@ defineExpose({
 // Emits
 const emit = defineEmits<{
   'stats-updated': [templates: NotificationTemplate[]]
+  'create-template': []
+  'edit-template': [template: NotificationTemplate]
+  'view-template': [template: NotificationTemplate]
 }>()
 
 // Watch templates and emit stats updates

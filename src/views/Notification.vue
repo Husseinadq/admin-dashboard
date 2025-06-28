@@ -123,8 +123,20 @@
               </div>
             </div>
 
-            <!-- Notification Template List -->
-            <NotificationTemplateList ref="templateListRef" @stats-updated="updateStats" />
+            <!-- Notification Template List or Editor -->
+            <div v-if="!showTemplateEditor">
+              <NotificationTemplateList ref="templateListRef" @stats-updated="updateStats" @edit-template="handleEditTemplate" @create-template="handleCreateTemplate" @view-template="handleViewTemplate" />
+            </div>
+            
+            <!-- Template Editor -->
+            <div v-else>
+              <NotificationTemplateEditor 
+                :template="selectedTemplate" 
+                :mode="editorMode" 
+                @close="closeTemplateEditor" 
+                @saved="handleTemplateSaved" 
+              />
+            </div>
           </div>
         </div>
 
@@ -148,6 +160,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/vue/24/outline'
 import NotificationTemplateList from '@/components/notifications/NotificationTemplateList.vue'
+import NotificationTemplateEditor from '@/components/notifications/NotificationTemplateEditor.vue'
 import QuickSendModal from '@/components/notifications/QuickSendModal.vue'
 import { NotificationTemplateService } from '@/services/notificationService'
 import type { NotificationTemplate } from '@/types/notifications'
@@ -156,6 +169,9 @@ import DashboardLayout from '@/components/layout/DashboardLayout.vue'
 // Reactive state
 const templateListRef = ref<InstanceType<typeof NotificationTemplateList> | null>(null)
 const showQuickSend = ref(false)
+const showTemplateEditor = ref(false)
+const selectedTemplate = ref<NotificationTemplate | null>(null)
+const editorMode = ref<'view' | 'create' | 'edit'>('create')
 const stats = ref({
   total: 0,
   email: 0,
@@ -190,6 +206,35 @@ const refreshTemplates = () => {
     templateListRef.value.loadTemplates()
   }
   loadStats()
+}
+
+// Template Editor Methods
+const handleCreateTemplate = () => {
+  selectedTemplate.value = null
+  editorMode.value = 'create'
+  showTemplateEditor.value = true
+}
+
+const handleEditTemplate = (template: NotificationTemplate) => {
+  selectedTemplate.value = template
+  editorMode.value = 'edit'
+  showTemplateEditor.value = true
+}
+
+const handleViewTemplate = (template: NotificationTemplate) => {
+  selectedTemplate.value = template
+  editorMode.value = 'view'
+  showTemplateEditor.value = true
+}
+
+const closeTemplateEditor = () => {
+  showTemplateEditor.value = false
+  selectedTemplate.value = null
+}
+
+const handleTemplateSaved = () => {
+  closeTemplateEditor()
+  refreshTemplates()
 }
 
 // Lifecycle
