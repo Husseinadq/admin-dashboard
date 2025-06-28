@@ -194,26 +194,26 @@
                 <span v-else>📝 Template Content</span>
                 <span v-if="form.type" class="text-red-500">*</span>
               </h4>
-              <!-- <p class="text-sm text-slate-600 mt-1">
-                <span v-if="form.type === emailType">Create your email template content below. You can use variables like {{ '{{name}}' }}, {{ '{{email}}' }}, etc.</span>
+              <p class="text-sm text-slate-600 mt-1">
+                <span v-if="form.type === emailType">Create your email template content below. You can use variables like \{\{name\}\}, \{\{email\}\}, etc.</span>
                 <span v-else-if="form.type === smsType">Enter your SMS message content (max 160 characters).</span>
                 <span v-else-if="form.type === whatsappType">Create your WhatsApp message template.</span>
                 <span v-else>Select a template type to start editing content.</span>
-              </p> -->
+              </p>
             </div>
 
             <!-- Content Editor -->
             <div class="flex-1 flex flex-col">
               <!-- Email Body -->
               <div v-if="form.type === 'email'" class="flex-1">
-                <textarea
-                  id="body"
+                <MonacoEditor
                   v-model="form.body"
-                  :required="form.type === 'email'"
-                  :disabled="mode === 'view'"
-                  class="w-full h-full min-h-[400px] px-4 py-3 bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 placeholder-slate-400 resize-none font-mono text-sm"
-                  placeholder="Enter email content. You can use variables like {{name}}, {{email}}, etc."
-                ></textarea>
+                  language="html"
+                  theme="vs"
+                  height="400px"
+                  :readonly="mode === 'view'"
+                  :options="monacoOptions"
+                />
                 <p v-if="errors.body" class="text-sm text-red-500 mt-2 flex items-center space-x-1">
                   <ExclamationTriangleIcon class="h-4 w-4" />
                   <span>{{ errors.body }}</span>
@@ -272,10 +272,10 @@
             <div v-if="form.type" class="mt-4 p-4 bg-blue-50/70 backdrop-blur-sm border border-blue-200 rounded-xl">
               <h5 class="text-sm font-semibold text-blue-800 mb-2">💡 Available Variables</h5>
               <div class="flex flex-wrap gap-2">
-                <!-- <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{{ '{{name}}' }}</code>
-                <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{{ '{{email}}' }}</code>
-                <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{{ '{{phone}}' }}</code>
-                <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{{ '{{company}}' }}</code> -->
+                <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">\{\{name\}\}</code>
+                <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">\{\{email\}\}</code>
+                <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">\{\{phone\}\}</code>
+                <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">\{\{company\}\}</code>
               </div>
             </div>
           </div>
@@ -318,6 +318,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { XMarkIcon, DocumentTextIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
 import type { NotificationTemplate, CreateTemplateRequest, UpdateTemplateRequest } from '@/types/notifications'
 import { NotificationTemplateService } from '@/services/notificationService'
+import MonacoEditor from '@/components/common/MonacoEditor.vue'
 
 // Props
 interface Props {
@@ -412,6 +413,22 @@ const populateForm = (template: NotificationTemplate) => {
   }
 }
 
+// Monaco Editor options
+const monacoOptions = computed(() => ({
+  wordWrap: 'on',
+  lineNumbers: 'on',
+  minimap: { enabled: false },
+  scrollBeyondLastLine: false,
+  fontSize: 14,
+  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+  placeholder: 'Enter email content. You can use variables like {{name}}, {{email}}, etc.',
+  suggest: {
+    showKeywords: true,
+    showSnippets: true
+  }
+}))
+
+// Form validation
 const validateForm = (): boolean => {
   errors.value = {}
   
