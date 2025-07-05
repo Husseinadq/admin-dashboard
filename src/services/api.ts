@@ -1,7 +1,7 @@
 import axios, { type AxiosResponse } from 'axios'
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://eejaz-api.trameaz.com/api/v1'
 
 // Create axios instance with default configuration
 const apiClient = axios.create({
@@ -86,14 +86,20 @@ export interface TicketMessage {
 }
 
 export interface TicketFilters {
-  status?: string[]
+  status?: 'open' | 'closed' | 'pending'
+  sender_id?: number
+  receiver_id?: number
+  store_id?: number
+  from?: string
+  to?: string
+  search?: string
+  // Legacy filters for backward compatibility
   priority?: string[]
   category?: string[]
   platform?: string[]
   assigned_to?: string
   date_from?: string
   date_to?: string
-  search?: string
 }
 
 export interface PaginatedResponse<T> {
@@ -132,18 +138,54 @@ export class TicketApiService {
   ): Promise<PaginatedResponse<Ticket>> {
     const params = new URLSearchParams({
       page: page.toString(),
-      per_page: perPage.toString(),
-      ...Object.fromEntries(
-        Object.entries(filters).filter(([_, value]) => 
-          value !== undefined && value !== null && value !== ''
-        )
-      )
+      per_page: perPage.toString()
     })
 
-    const response: AxiosResponse<PaginatedResponse<Ticket>> = await apiClient.get(
-      `/admin/tickets?${params.toString()}`
+    // Add filters based on backend API structure
+    if (filters.status) params.append('status', filters.status)
+    if (filters.sender_id) params.append('sender_id', filters.sender_id.toString())
+    if (filters.receiver_id) params.append('receiver_id', filters.receiver_id.toString())
+    if (filters.store_id) params.append('store_id', filters.store_id.toString())
+    if (filters.from) params.append('from', filters.from)
+    if (filters.to) params.append('to', filters.to)
+    if (filters.search) params.append('search', filters.search)
+
+    // Legacy filters for backward compatibility
+    if (filters.priority && filters.priority.length > 0) {
+      filters.priority.forEach(p => params.append('priority[]', p))
+    }
+    if (filters.category && filters.category.length > 0) {
+      filters.category.forEach(c => params.append('category[]', c))
+    }
+    if (filters.platform && filters.platform.length > 0) {
+      filters.platform.forEach(p => params.append('platform[]', p))
+    }
+    if (filters.assigned_to) params.append('assigned_to', filters.assigned_to)
+    if (filters.date_from) params.append('date_from', filters.date_from)
+    if (filters.date_to) params.append('date_to', filters.date_to)
+
+    const response: AxiosResponse<ApiResponse<Ticket[]>> = await apiClient.get(
+      `/ticket?${params.toString()}`
     )
-    return response.data
+    
+    // Transform response to match expected PaginatedResponse structure
+    return {
+      data: response.data.data,
+      meta: {
+        current_page: page,
+        last_page: Math.ceil(response.data.data.length / perPage),
+        per_page: perPage,
+        total: response.data.data.length,
+        from: (page - 1) * perPage + 1,
+        to: Math.min(page * perPage, response.data.data.length)
+      },
+      links: {
+        first: '',
+        last: '',
+        prev: null,
+        next: null
+      }
+    }
   }
 
   /**

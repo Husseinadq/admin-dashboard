@@ -85,54 +85,49 @@
               @change="applyFilters">
               <option value="">All Status</option>
               <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Resolved</option>
+              <option value="pending">Pending</option>
               <option value="closed">Closed</option>
             </select>
           </div>
 
-          <!-- Priority Filter -->
+          <!-- Sender ID Filter -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-1">Priority</label>
-            <select v-model="filters.priority"
+            <label class="text-sm font-medium text-gray-700 mb-1">Sender ID</label>
+            <input v-model.number="filters.sender_id" type="number" placeholder="Enter sender ID"
               class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              @change="applyFilters">
-              <option value="">All Priorities</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+              @input="applyFilters" />
           </div>
 
-          <!-- Category Filter -->
+          <!-- Receiver ID Filter -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-1">Category</label>
-            <select v-model="filters.category"
+            <label class="text-sm font-medium text-gray-700 mb-1">Receiver ID</label>
+            <input v-model.number="filters.receiver_id" type="number" placeholder="Enter receiver ID"
               class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              @change="applyFilters">
-              <option value="">All Categories</option>
-              <option value="technical">Technical</option>
-              <option value="billing">Billing</option>
-              <option value="general">General</option>
-              <option value="feature_request">Feature Request</option>
-              <option value="bug_report">Bug Report</option>
-            </select>
+              @input="applyFilters" />
           </div>
 
-          <!-- Platform Filter -->
+          <!-- Store ID Filter -->
           <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-700 mb-1">Platform</label>
-            <select v-model="filters.platform"
+            <label class="text-sm font-medium text-gray-700 mb-1">Store ID</label>
+            <input v-model.number="filters.store_id" type="number" placeholder="Enter store ID"
               class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              @change="applyFilters">
-              <option value="">All Platforms</option>
-              <option value="salla">Salla</option>
-              <option value="zid">Zid</option>
-              <option value="wordpress">WordPress</option>
-              <option value="shopify">Shopify</option>
-              <option value="other">Other</option>
-            </select>
+              @input="applyFilters" />
+          </div>
+
+          <!-- From Date Filter -->
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-gray-700 mb-1">From Date</label>
+            <input v-model="filters.from" type="date"
+              class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              @change="applyFilters" />
+          </div>
+
+          <!-- To Date Filter -->
+          <div class="flex flex-col">
+            <label class="text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <input v-model="filters.to" type="date"
+              class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              @change="applyFilters" />
           </div>
 
           <!-- Export Button -->
@@ -378,12 +373,18 @@ const pagination = reactive({
 
 // Filters
 const filters = reactive<TicketFilters>({
-  status: [],
+  status: undefined,
+  sender_id: undefined,
+  receiver_id: undefined,
+  store_id: undefined,
+  from: undefined,
+  to: undefined,
+  search: '',
+  // Legacy filters for backward compatibility
   priority: [],
   category: [],
   platform: [],
-  assigned_to: '',
-  search: ''
+  assigned_to: ''
 })
 
 // Statistics
