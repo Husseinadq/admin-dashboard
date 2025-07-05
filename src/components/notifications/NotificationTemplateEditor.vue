@@ -278,6 +278,76 @@
                 <code class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">\{\{company\}\}</code>
               </div>
             </div>
+
+            <!-- Template Attributes Management -->
+            <div v-if="props.template?.id && mode !== 'view'" class="mt-4 p-4 bg-purple-50/70 backdrop-blur-sm border border-purple-200 rounded-xl">
+              <div class="flex items-center justify-between mb-3">
+                <h5 class="text-sm font-semibold text-purple-800">🏷️ Template Attributes</h5>
+                <button
+                  type="button"
+                  @click="openAttributeForm()"
+                  class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-700 bg-purple-100 border border-purple-200 rounded-lg hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200"
+                >
+                  <PlusIcon class="h-3 w-3 mr-1" />
+                  Add Attribute
+                </button>
+              </div>
+              
+              <!-- Attributes List -->
+              <div v-if="attributesLoading" class="text-center py-4">
+                <div class="inline-flex items-center text-sm text-purple-600">
+                  <svg class="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading attributes...
+                </div>
+              </div>
+              
+              <div v-else-if="templateAttributes.length === 0" class="text-center py-4 text-sm text-purple-600">
+                No custom attributes defined. Click "Add Attribute" to create dynamic variables.
+              </div>
+              
+              <div v-else class="space-y-2">
+                <div
+                  v-for="attribute in templateAttributes"
+                  :key="attribute.id"
+                  class="flex items-center justify-between p-3 bg-white/50 border border-purple-100 rounded-lg"
+                >
+                  <div class="flex-1">
+                    <div class="flex items-center space-x-2">
+                      <code 
+                         class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs cursor-pointer hover:bg-purple-200 transition-colors"
+                         @click="insertAttributeVariable(attribute.name)"
+                         :title="`Click to insert {{${attribute.name}}} into template`"
+                       >
+                         <!-- {{ `{{${attribute.name}}}` }} -->
+                       </code>
+                      <span class="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded">{{ attribute.type }}</span>
+                    </div>
+                    <p v-if="attribute.value" class="text-xs text-slate-600 mt-1 truncate">Default: {{ attribute.value }}</p>
+                  </div>
+                  <div class="flex items-center space-x-1">
+                    <button
+                      type="button"
+                      @click="openAttributeForm(attribute)"
+                      class="p-1.5 text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded transition-all duration-200"
+                      title="Edit attribute"
+                    >
+                      <PencilIcon class="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      @click="deleteAttribute(attribute)"
+                      class="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-100 rounded transition-all duration-200"
+                      title="Delete attribute"
+                    >
+                      <TrashIcon class="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -310,15 +380,113 @@
         </div>
       </div>
     </form>
+
+    <!-- Attribute Form Modal -->
+    <div v-if="showAttributeForm" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="closeAttributeForm"></div>
+        
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        
+        <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+          <div class="sm:flex sm:items-start">
+            <div class="w-full">
+              <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                {{ editingAttribute ? 'Edit Attribute' : 'Add New Attribute' }}
+              </h3>
+              
+              <form @submit.prevent="saveAttribute" class="space-y-4">
+                <!-- Attribute Name -->
+                <div>
+                  <label for="attribute-name" class="block text-sm font-medium text-gray-700 mb-1">
+                    Attribute Name *
+                  </label>
+                  <input
+                    id="attribute-name"
+                    v-model="attributeForm.name"
+                    type="text"
+                    placeholder="e.g., firstName, companyName"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                    :class="{ 'border-red-500': attributeErrors.name }"
+                  />
+                  <p v-if="attributeErrors.name" class="text-sm text-red-500 mt-1">{{ attributeErrors.name }}</p>
+                </div>
+                
+                <!-- Attribute Type -->
+                <div>
+                  <label for="attribute-type" class="block text-sm font-medium text-gray-700 mb-1">
+                    Data Type *
+                  </label>
+                  <select
+                    id="attribute-type"
+                    v-model="attributeForm.type"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                    :class="{ 'border-red-500': attributeErrors.type }"
+                  >
+                    <option value="string">String</option>
+                    <option value="number">Number</option>
+                    <option value="boolean">Boolean</option>
+                    <option value="date">Date</option>
+                    <option value="email">Email</option>
+                    <option value="url">URL</option>
+                  </select>
+                  <p v-if="attributeErrors.type" class="text-sm text-red-500 mt-1">{{ attributeErrors.type }}</p>
+                </div>
+                
+                <!-- Default Value -->
+                <div>
+                  <label for="attribute-value" class="block text-sm font-medium text-gray-700 mb-1">
+                    Default Value (Optional)
+                  </label>
+                  <input
+                    id="attribute-value"
+                    v-model="attributeForm.value"
+                    type="text"
+                    placeholder="Optional default value"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                  />
+                  <p class="text-xs text-gray-500 mt-1">This value will be used if no specific value is provided when sending notifications.</p>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    @click="closeAttributeForm"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    :disabled="loading"
+                    class="px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span v-if="loading" class="mr-2">
+                      <svg class="animate-spin h-4 w-4 inline" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </span>
+                    {{ editingAttribute ? 'Update' : 'Create' }} Attribute
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { XMarkIcon, DocumentTextIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline'
-import type { NotificationTemplate, CreateTemplateRequest, UpdateTemplateRequest } from '@/types/notifications'
-import { NotificationTemplateService } from '@/services/notificationService'
+import { ref, computed, watch, onMounted } from 'vue'
+import { XMarkIcon, ExclamationTriangleIcon, DocumentTextIcon, PlusIcon, TrashIcon, PencilIcon } from '@heroicons/vue/24/outline'
+import type { NotificationTemplate, CreateTemplateRequest, UpdateTemplateRequest, TemplateAttribute, CreateTemplateAttributeRequest, UpdateTemplateAttributeRequest } from '@/types/notifications'
+import { NotificationTemplateService, TemplateAttributeService } from '@/services/notificationService'
 import MonacoEditor from '@/components/common/MonacoEditor.vue'
+import * as monaco from 'monaco-editor'
 
 // Props
 interface Props {
@@ -342,6 +510,18 @@ const generalError = ref('')
 const emailType=ref('email')
 const smsType=ref('sms')
 const whatsappType=ref('whatsapp')
+
+// Template attributes state
+const templateAttributes = ref<TemplateAttribute[]>([])
+const attributesLoading = ref(false)
+const showAttributeForm = ref(false)
+const editingAttribute = ref<TemplateAttribute | null>(null)
+const attributeForm = ref({
+  name: '',
+  type: 'string',
+  value: ''
+})
+const attributeErrors = ref<Record<string, string>>({})
 
 // Form data
 const form = ref({
@@ -414,18 +594,14 @@ const populateForm = (template: NotificationTemplate) => {
 }
 
 // Monaco Editor options
-const monacoOptions = computed(() => ({
+const monacoOptions = computed((): monaco.editor.IStandaloneEditorConstructionOptions => ({
   wordWrap: 'on',
   lineNumbers: 'on',
+  fontSize: 14,
+  fontFamily: 'Consolas, \'Courier New\', monospace',
   minimap: { enabled: false },
   scrollBeyondLastLine: false,
-  fontSize: 14,
-  fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
-  placeholder: 'Enter email content. You can use variables like {{name}}, {{email}}, etc.',
-  suggest: {
-    showKeywords: true,
-    showSnippets: true
-  }
+  automaticLayout: true
 }))
 
 // Form validation
@@ -454,6 +630,136 @@ const validateForm = (): boolean => {
   }
   
   return Object.keys(errors.value).length === 0
+}
+
+// Template attributes management
+const loadTemplateAttributes = async () => {
+  if (!props.template?.id) return
+  
+  try {
+    attributesLoading.value = true
+    const response = await TemplateAttributeService.getAttributesByTemplate(props.template.id)
+    if (response.status === 200 && response.data) {
+      templateAttributes.value = response.data
+    }
+  } catch (error: any) {
+    console.error('Failed to load template attributes:', error)
+  } finally {
+    attributesLoading.value = false
+  }
+}
+
+const validateAttributeForm = (): boolean => {
+  attributeErrors.value = {}
+  
+  if (!attributeForm.value.name.trim()) {
+    attributeErrors.value.name = 'Attribute name is required'
+  }
+  
+  if (!attributeForm.value.type) {
+    attributeErrors.value.type = 'Attribute type is required'
+  }
+  
+  // Check for duplicate names (excluding current editing attribute)
+  const existingAttribute = templateAttributes.value.find(attr => 
+    attr.name.toLowerCase() === attributeForm.value.name.toLowerCase() && 
+    attr.id !== editingAttribute.value?.id
+  )
+  
+  if (existingAttribute) {
+    attributeErrors.value.name = 'Attribute name already exists'
+  }
+  
+  return Object.keys(attributeErrors.value).length === 0
+}
+
+const openAttributeForm = (attribute?: TemplateAttribute) => {
+  if (attribute) {
+    editingAttribute.value = attribute
+    attributeForm.value = {
+      name: attribute.name,
+      type: attribute.type,
+      value: attribute.value || ''
+    }
+  } else {
+    editingAttribute.value = null
+    attributeForm.value = {
+      name: '',
+      type: 'string',
+      value: ''
+    }
+  }
+  attributeErrors.value = {}
+  showAttributeForm.value = true
+}
+
+const closeAttributeForm = () => {
+  showAttributeForm.value = false
+  editingAttribute.value = null
+  attributeForm.value = {
+    name: '',
+    type: 'string',
+    value: ''
+  }
+  attributeErrors.value = {}
+}
+
+const saveAttribute = async () => {
+  if (!validateAttributeForm() || !props.template?.id) return
+  
+  try {
+    loading.value = true
+    
+    if (editingAttribute.value) {
+      // Update existing attribute
+      const updateData: UpdateTemplateAttributeRequest = {
+        name: attributeForm.value.name,
+        type: attributeForm.value.type,
+        value: attributeForm.value.value || undefined
+      }
+      
+      await TemplateAttributeService.updateAttribute(editingAttribute.value.id, updateData)
+    } else {
+      // Create new attribute
+      const createData: CreateTemplateAttributeRequest = {
+        template_id: props.template.id,
+        name: attributeForm.value.name,
+        type: attributeForm.value.type,
+        value: attributeForm.value.value || undefined
+      }
+      
+      await TemplateAttributeService.createAttribute(createData)
+    }
+    
+    await loadTemplateAttributes()
+    closeAttributeForm()
+  } catch (error: any) {
+    generalError.value = error.message || 'Failed to save attribute'
+  } finally {
+    loading.value = false
+  }
+}
+
+const deleteAttribute = async (attribute: TemplateAttribute) => {
+  if (!confirm(`Are you sure you want to delete the attribute "${attribute.name}"?`)) {
+    return
+  }
+  
+  try {
+    loading.value = true
+    await TemplateAttributeService.deleteAttribute(attribute.id)
+    await loadTemplateAttributes()
+  } catch (error: any) {
+    generalError.value = error.message || 'Failed to delete attribute'
+  } finally {
+    loading.value = false
+  }
+}
+
+const insertAttributeVariable = (attributeName: string) => {
+  const variable = `{{${attributeName}}}`
+  const currentBody = form.value.body
+  form.value.body = currentBody + variable
 }
 
 const handleSubmit = async () => {
@@ -522,8 +828,12 @@ const handleClose = () => {
 watch(() => props.template, (newTemplate) => {
   if (newTemplate) {
     populateForm(newTemplate)
+    // Load template attributes for existing template
+    loadTemplateAttributes()
   } else {
     resetForm()
+    // Clear template attributes
+    templateAttributes.value = []
   }
 }, { immediate: true })
 

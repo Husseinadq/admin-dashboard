@@ -3,6 +3,7 @@ import Dashbard from '../views/Dashbard.vue'
 import Login from '../views/auth/Login.vue'
 import Ticket from '../views/Ticket.vue'
 import Notification from '../views/Notification.vue'
+import TemplateAttributes from '../views/TemplateAttributes.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -30,6 +31,12 @@ const router = createRouter({
       path: '/notifications',
       name: 'notifications',
       component: Notification,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/template-attributes',
+      name: 'template-attributes',
+      component: TemplateAttributes,
       meta: { requiresAuth: true }
     },
   ],

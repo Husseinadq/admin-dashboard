@@ -123,19 +123,59 @@
               </div>
             </div>
 
-            <!-- Notification Template List or Editor -->
-            <div v-if="!showTemplateEditor">
-              <NotificationTemplateList ref="templateListRef" @stats-updated="updateStats" @edit-template="handleEditTemplate" @create-template="handleCreateTemplate" @view-template="handleViewTemplate" />
+            <!-- Tab Navigation -->
+            <div class="bg-white shadow rounded-lg mb-6">
+              <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                  <button
+                    @click="activeTab = 'templates'"
+                    :class="[
+                      activeTab === 'templates'
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                      'whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm'
+                    ]"
+                  >
+                    <DocumentTextIcon class="h-5 w-5 inline mr-2" />
+                    Notification Templates
+                  </button>
+                  <button
+                    @click="activeTab = 'attributes'"
+                    :class="[
+                      activeTab === 'attributes'
+                        ? 'border-indigo-500 text-indigo-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                      'whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm'
+                    ]"
+                  >
+                    <TagIcon class="h-5 w-5 inline mr-2" />
+                    Template Attributes
+                  </button>
+                </nav>
+              </div>
             </div>
-            
-            <!-- Template Editor -->
-            <div v-else>
-              <NotificationTemplateEditor 
-                :template="selectedTemplate" 
-                :mode="editorMode" 
-                @close="closeTemplateEditor" 
-                @saved="handleTemplateSaved" 
-              />
+
+            <!-- Tab Content -->
+            <div v-if="activeTab === 'templates'">
+              <!-- Notification Template List or Editor -->
+              <div v-if="!showTemplateEditor">
+                <NotificationTemplateList ref="templateListRef" @stats-updated="updateStats" @edit-template="handleEditTemplate" @create-template="handleCreateTemplate" @view-template="handleViewTemplate" />
+              </div>
+              
+              <!-- Template Editor -->
+              <div v-else>
+                <NotificationTemplateEditor 
+                  :template="selectedTemplate" 
+                  :mode="editorMode" 
+                  @close="closeTemplateEditor" 
+                  @saved="handleTemplateSaved" 
+                />
+              </div>
+            </div>
+
+            <!-- Template Attributes Tab -->
+            <div v-else-if="activeTab === 'attributes'">
+              <TemplateAttributesManager />
             </div>
           </div>
         </div>
@@ -157,11 +197,13 @@ import {
   DevicePhoneMobileIcon,
   ChatBubbleLeftRightIcon,
   PaperAirplaneIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  TagIcon
 } from '@heroicons/vue/24/outline'
 import NotificationTemplateList from '@/components/notifications/NotificationTemplateList.vue'
 import NotificationTemplateEditor from '@/components/notifications/NotificationTemplateEditor.vue'
 import QuickSendModal from '@/components/notifications/QuickSendModal.vue'
+import TemplateAttributesManager from '@/components/notifications/TemplateAttributesManager.vue'
 import { NotificationTemplateService } from '@/services/notificationService'
 import type { NotificationTemplate } from '@/types/notifications'
 import DashboardLayout from '@/components/layout/DashboardLayout.vue'
@@ -172,6 +214,7 @@ const showQuickSend = ref(false)
 const showTemplateEditor = ref(false)
 const selectedTemplate = ref<NotificationTemplate | null>(null)
 const editorMode = ref<'view' | 'create' | 'edit'>('create')
+const activeTab = ref<'templates' | 'attributes'>('templates')
 const stats = ref({
   total: 0,
   email: 0,

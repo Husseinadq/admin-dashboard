@@ -17,7 +17,8 @@ import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
-  TicketIcon
+  TicketIcon,
+  TagIcon
 } from '@heroicons/vue/24/outline'
 
 interface MenuItem {
@@ -40,6 +41,7 @@ const navigation = ref<MenuItem[]>([
   { name: 'Dashboard', icon: HomeIcon, href: '/', routeName: 'dashboard' },
   { name: 'Tickets', icon: TicketIcon, href: '/tickets', routeName: 'tickets' },
   { name: 'Notifications', icon: BellIcon, href: '/notifications', routeName: 'notifications' },
+  { name: 'Template Attributes', icon: TagIcon, href: '/template-attributes', routeName: 'template-attributes' },
   // { name: 'Merchants', icon: BuildingStorefrontIcon, href: '/merchants', routeName: 'merchants' },
   // { name: 'Products', icon: CubeIcon, href: '/products', routeName: 'products' },
   // { name: 'Tokens', icon: KeyIcon, href: '/tokens', routeName: 'tokens' },
